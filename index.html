@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="sr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>MOJRAČUN – poziv</title>
+<meta property="og:title" content="Poziv u MOJRAČUN">
+<meta property="og:description" content="Otvori link na iPhone-u da se pridružiš budžetu.">
+<style>
+  :root { color-scheme: light dark; --bg: #f4f5f0; --card: #fff; --text: #14161a; --muted: #6b6f76; --lime: #c6f432; --on-lime: #14161a; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0f1012; --card: #1b1d21; --text: #f3f4f6; --muted: #9a9ea6; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px 16px;
+         background: var(--bg); color: var(--text); font: 17px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  main { width: 100%; max-width: 420px; background: var(--card); border-radius: 28px; padding: 28px 22px; text-align: center; }
+  .logo { font-weight: 800; letter-spacing: .04em; font-size: 22px; }
+  h1 { font-size: 22px; margin: 18px 0 6px; }
+  p { margin: 0 0 14px; color: var(--muted); }
+  .button { display: block; width: 100%; border: 0; border-radius: 18px; padding: 16px; margin-top: 10px;
+            font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; }
+  .primary { background: var(--lime); color: var(--on-lime); }
+  .secondary { background: transparent; color: var(--text); border: 1.5px solid var(--muted); }
+  ol { text-align: left; color: var(--muted); padding-left: 22px; margin: 18px 0 0; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <div class="logo">MOJRAČUN</div>
+  <section id="invite" hidden>
+    <h1 id="title"></h1>
+    <p data-t="lead"></p>
+    <a id="open" class="button primary" data-t="open"></a>
+    <button id="copy" class="button secondary" type="button" data-t="copy"></button>
+    <ol>
+      <li data-t="step1"></li>
+      <li data-t="step2"></li>
+    </ol>
+  </section>
+  <section id="invalid" hidden>
+    <h1 data-t="invalidTitle"></h1>
+    <p data-t="invalidText"></p>
+  </section>
+</main>
+<script>
+  // The invite travels in the fragment (#sheet=…&name=…), so it never reaches this server.
+  const sr = /^(sr|hr|bs|me)/i.test(navigator.language || "");
+  const text = sr ? {
+    title: name => name ? `Poziv u „${name}”` : "Poziv u budžet",
+    lead: "Pozvan si da zajedno vodite troškove u aplikaciji MOJRAČUN.",
+    open: "Otvori u aplikaciji MOJRAČUN",
+    copy: "Kopiraj poziv",
+    copied: "Kopirano ✓",
+    step1: "Ako se aplikacija ne otvori, kopiraj poziv.",
+    step2: "Otvori MOJRAČUN → Pridruži se domaćinstvu → Nalepi.",
+    invalidTitle: "Link nije potpun",
+    invalidText: "Zamoli osobu koja te je pozvala da ti ponovo pošalje link iz aplikacije (Članovi → Ponovo podeli link za poziv)."
+  } : {
+    title: name => name ? `Invitation to “${name}”` : "Budget invitation",
+    lead: "You're invited to track expenses together in the MOJRAČUN app.",
+    open: "Open in MOJRAČUN",
+    copy: "Copy invitation",
+    copied: "Copied ✓",
+    step1: "If the app doesn't open, copy the invitation.",
+    step2: "Open MOJRAČUN → Join a household → Paste.",
+    invalidTitle: "This link is incomplete",
+    invalidText: "Ask the person who invited you to send the link again from the app (Members → Share the invite link again)."
+  };
+  if (!sr) document.documentElement.lang = "en";
+  document.querySelectorAll("[data-t]").forEach(el => { el.textContent = text[el.dataset.t]; });
+
+  const params = new URLSearchParams(location.hash.slice(1));
+  const sheet = params.get("sheet") || "";
+  const name = params.get("name") || "";
+  if (/^[A-Za-z0-9_-]{20,}$/.test(sheet)) {
+    const query = new URLSearchParams({ sheet, name });
+    const appURL = "kucnibudzet://join?" + query.toString().replace(/\+/g, "%20");
+    document.getElementById("title").textContent = text.title(name);
+    document.getElementById("open").href = appURL;
+    document.getElementById("invite").hidden = false;
+    document.getElementById("copy").addEventListener("click", async event => {
+      try {
+        await navigator.clipboard.writeText(location.href);
+        event.target.textContent = text.copied;
+      } catch {}
+    });
+    location.href = appURL;
+  } else {
+    document.getElementById("invalid").hidden = false;
+  }
+</script>
+</body>
+</html>
